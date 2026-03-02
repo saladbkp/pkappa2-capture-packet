@@ -39,8 +39,7 @@ only run tcpdump.sh
 ```
 
 access from 
-http://38.180.243.176:8080/#/
-ray ray
+http://xxxx:8080 username password
 
 my pcap capture folder 
 ```
