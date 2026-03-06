@@ -5,16 +5,15 @@ cd "$(dirname "$0")"
 # ====== 配置区 ======
 INTERVAL=300                 # 5 minutes
 PCAP_DIR="$(pwd)/pcaps"
-IFACE="any"                  
+IFACE="any"
 HOSTNAME_TAG="$(hostname -s)"
 
 # pkappa2 server（分析机）
 PKAPPA2_IP="xxx.xxx.xx.x"    # 改成你的 pkappa2 IP
 PKAPPA2_PORT="8080"          # 改成你的 pkappa2 port
 
-# 你要抓的 service ports（示例：HTTP/HTTPS/SSH/自定义服务 80 443 8080 8443 1337,5000 is for demo）
-TCP_PORTS=(5000)
-UDP_PORTS=(53 123)
+# 只抓比赛服务端口（与你 pkappa2 里的 services 对齐）
+TCP_PORTS=(5000 5001 5003 5004)
 
 # 可选：不抓 ssh（避免噪音）
 EXCLUDE_SSH=true
@@ -38,20 +37,15 @@ join_ports() {
 }
 
 TCP_EXPR="$(join_ports tcp "${TCP_PORTS[@]}")"
-UDP_EXPR="$(join_ports udp "${UDP_PORTS[@]}")"
 
-if [ -n "$TCP_EXPR" ] && [ -n "$UDP_EXPR" ]; then
-  PORT_FILTER="( ${TCP_EXPR} or ${UDP_EXPR} )"
-elif [ -n "$TCP_EXPR" ]; then
+if [ -n "$TCP_EXPR" ]; then
   PORT_FILTER="( ${TCP_EXPR} )"
-elif [ -n "$UDP_EXPR" ]; then
-  PORT_FILTER="( ${UDP_EXPR} )"
 else
-  # 如果你没填 ports，就全抓（不推荐长期全抓）
-  PORT_FILTER="(tcp or udp)"
+  echo "[-] No TCP ports configured" >&2
+  exit 1
 fi
 
-# 重点：排除上传到 pkappa2 的流量，避免“抓到上传包 → 上传 → 再被抓到”指数增长
+# 排除上传到 pkappa2 的流量，避免上传流量再次被抓进去
 EXCLUDE_UPLOAD="and not (host ${PKAPPA2_IP} and port ${PKAPPA2_PORT})"
 
 # 可选：排除 ssh
